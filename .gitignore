@@ -1,3 +1,5 @@
 venv/
 mtb-finder.txt
 instance/
+
+__pycache__
