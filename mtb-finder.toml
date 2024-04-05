@@ -1,0 +1,13 @@
+[project]
+name = "MTB Finder"
+version = "1.0.0"
+description = "App built to search for deals by scraping webpages and comparing prices."
+dependencies = [
+    "flask",
+    "bs4",
+    "requests"
+]
+
+[build-system]
+requires = ["flit_core<4"]
+build-backend = "flit_core.buildapi"

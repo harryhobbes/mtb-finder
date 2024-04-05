@@ -4,6 +4,7 @@
 <h1>{% block title %}Deals{% endblock %}</h1>
 {% if g.user %}
 <a class="action" href="{{ url_for('deal.create') }}">New</a>
+<a class="action" href="{{ url_for('deal.refresh') }}">Refresh</a>
 {% endif %}
 {% endblock %}
 
@@ -21,6 +22,7 @@
     </header>
     <p class="body">{{ deal['target_url'] }}</p>
     <p class="body">{{ deal['css_selector'] }}</p>
+    <p class="body">{{ deal['latest_deal_text'] }}</p>
 </article>
 {% if not loop.last %}
 <hr>

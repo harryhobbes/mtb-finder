@@ -5,6 +5,7 @@ from werkzeug.exceptions import abort
 
 from app.auth import login_required
 from app.db import get_db
+from app.finder import find_deal
 
 bp = Blueprint('deal', __name__, url_prefix='/deal')
 
@@ -12,7 +13,7 @@ bp = Blueprint('deal', __name__, url_prefix='/deal')
 def index():
     db = get_db()
     deals = db.execute(
-        'SELECT d.id, user_id, title, target_url, css_selector, d.created, u.username'
+        'SELECT d.id, user_id, title, target_url, css_selector, latest_deal_text, d.created, u.username'
         ' FROM deal d JOIN user u ON d.user_id = u.id'
         ' ORDER BY d.title ASC'
     ).fetchall()
@@ -101,6 +102,41 @@ def update(id):
             return redirect(url_for('deal.index'))
 
     return render_template('deal/update.html', deal=deal)
+
+@bp.route('/refresh')
+@login_required
+def refresh():
+    db = get_db()
+    deals = db.execute(
+        'SELECT id, title, target_url, css_selector'
+        ' FROM deal'
+    ).fetchall()
+
+    if deals is None:
+        abort(404, "No deals to update")
+
+    for deal in deals:
+        price = find_deal(deal['target_url'], deal['css_selector'])
+        id = deal['id']
+        title = deal['title']
+        print(f'{title} has today\'s price: {price}')
+        db.execute(
+            'INSERT INTO deal_log (deal_id, deal_text)'
+            ' VALUES (?, ?)',
+            (id, price)
+        )
+        db.commit()
+
+        db.execute(
+            'UPDATE deal SET latest_deal_text = ?'
+            ' WHERE id = ?',
+            (price, id)
+        )
+        db.commit()
+
+    flash('Refresh complete')
+
+    return redirect('/')
 
 @bp.route('/<int:id>/delete', methods=('POST',))
 @login_required

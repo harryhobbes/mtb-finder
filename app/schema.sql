@@ -15,6 +15,7 @@ CREATE TABLE deal (
   title TEXT NOT NULL,
   target_url TEXT NOT NULL,
   css_selector TEXT NOT NULL,
+  latest_deal_text TEXT,
   created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES user (id)
 );
