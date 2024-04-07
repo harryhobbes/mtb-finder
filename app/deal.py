@@ -5,9 +5,15 @@ from werkzeug.exceptions import abort
 
 from app.auth import login_required
 from app.db import get_db
-from app.finder import find_deal
+
+from app.finder import find_deal, get_clean_price
+from app.graph import generate_history_graph, generate_test_graph
 
 bp = Blueprint('deal', __name__, url_prefix='/deal')
+
+@bp.app_template_filter()
+def format_currency(price):
+    return f"${float(price):,.2f}"
 
 @bp.route('/')
 def index():
@@ -52,22 +58,6 @@ def create():
 
     return render_template('deal/create.html')
 
-def get_deal(id, check_author=True):
-    deal = get_db().execute(
-        'SELECT d.id, user_id, title, target_url, css_selector, d.created, u.username'
-         ' FROM deal d JOIN user u ON d.user_id = u.id'
-        ' WHERE d.id = ?',
-        (id,)
-    ).fetchone()
-
-    if deal is None:
-        abort(404, f"Deal id {id} doesn't exist.")
-
-    if check_author and deal['user_id'] != g.user['id']:
-        abort(403)
-
-    return deal
-
 @bp.route('/<int:id>/update', methods=('GET', 'POST'))
 @login_required
 def update(id):
@@ -103,6 +93,15 @@ def update(id):
 
     return render_template('deal/update.html', deal=deal)
 
+@bp.route('/<int:id>/history', methods=('GET', 'POST'))
+@login_required
+def history(id):
+    deal = get_deal(id)
+    deal_history = get_deal_history(id)
+    history_graph = generate_history_graph(deal_history)
+    #history_graph = generate_test_graph()
+    return render_template('deal/history.html', deal=deal, deal_history=deal_history, history_graph=history_graph)
+
 @bp.route('/refresh')
 @login_required
 def refresh():
@@ -116,21 +115,27 @@ def refresh():
         abort(404, "No deals to update")
 
     for deal in deals:
-        price = find_deal(deal['target_url'], deal['css_selector'])
+        price_dirty = find_deal(deal['target_url'], deal['css_selector'])
+        price_clean = get_clean_price(price_dirty)
+
         id = deal['id']
         title = deal['title']
-        print(f'{title} has today\'s price: {price}')
+
+        message = f'{title} current price: {format_currency(price_clean)}'
+        print(message)
+        send_slack_message(message)
+                
         db.execute(
             'INSERT INTO deal_log (deal_id, deal_text)'
             ' VALUES (?, ?)',
-            (id, price)
+            (id, price_clean)
         )
         db.commit()
 
         db.execute(
             'UPDATE deal SET latest_deal_text = ?'
             ' WHERE id = ?',
-            (price, id)
+            (price_clean, id)
         )
         db.commit()
 
@@ -146,3 +151,44 @@ def delete(id):
     db.execute('DELETE FROM deal WHERE id = ?', (id,))
     db.commit()
     return redirect(url_for('deal.index'))
+
+def get_deal(id, check_author=True):
+    deal = get_db().execute(
+        'SELECT d.id, user_id, title, target_url, css_selector, d.created, u.username'
+        ' FROM deal d JOIN user u ON d.user_id = u.id'
+        ' WHERE d.id = ?',
+        (id,)
+    ).fetchone()
+
+    if deal is None:
+        abort(404, f"Deal id {id} doesn't exist.")
+
+    if check_author and deal['user_id'] != g.user['id']:
+        abort(403)
+
+    return deal
+
+def get_deal_history(id):
+    deal_history = get_db().execute(
+        'SELECT created, deal_text'
+        ' FROM deal_log'
+        ' WHERE deal_id = ?',
+        (id,)
+    ).fetchall()
+
+    return deal_history
+
+def send_slack_message(message):
+    import os
+    from slack_sdk import WebClient
+    
+    slack_token = os.environ["SLACK_API_KEY"]
+    
+    client = WebClient(token=slack_token)
+
+    # Send a message
+    client.chat_postMessage(
+        channel="general", 
+        text=message, 
+        username="MTB Finder"
+    )
