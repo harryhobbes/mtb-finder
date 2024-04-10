@@ -18,13 +18,14 @@ def send_update(message):
         print(message)
         
 def find_deal(target_url, css_selector):
-    price = '0.00'
+    price = None
 
     try:
         page = requests.get(target_url)
         soup = BeautifulSoup(page.text, 'html.parser')
         
-        price = soup.css.select_one(css_selector).text
+        element = soup.css.select_one(css_selector)
+        price = element.text if element else None
     except:
         print('Price grab failed. Likely dynamic content. Trying advanced Finder')
         price = find_dynamic_deal(target_url, css_selector)
@@ -32,7 +33,7 @@ def find_deal(target_url, css_selector):
     return price
         
 def find_dynamic_deal(target_url, css_selector):
-    price = '0.00'
+    price = None
 
     try:
         options = webdriver.ChromeOptions()
@@ -48,7 +49,8 @@ def find_dynamic_deal(target_url, css_selector):
         html = driver.page_source
         soup = BeautifulSoup(html, 'html.parser')
         
-        price = soup.css.select_one(css_selector).text
+        element = soup.css.select_one(css_selector)
+        price = element.text if element else None
     except:
         print('Price grab failed. Likely an issue with the source or CSS selector')
 

@@ -121,28 +121,9 @@ def refresh():
 
     for deal in deals:
         price_dirty = find_deal(deal['target_url'], deal['css_selector'])
-        price_clean = get_clean_price(price_dirty)
 
-        id = deal['id']
-        title = deal['title']
-
-        message = f'{title} current price: {format_currency(price_clean)}'
-        print(message)
-        send_slack_message(message)
-                
-        db.execute(
-            'INSERT INTO deal_log (deal_id, deal_text)'
-            ' VALUES (?, ?)',
-            (id, price_clean)
-        )
-        db.commit()
-
-        db.execute(
-            'UPDATE deal SET latest_deal_text = ?'
-            ' WHERE id = ?',
-            (price_clean, id)
-        )
-        db.commit()
+        if price_dirty:
+            update_price_history(deal, price_dirty)
 
     flash('Refresh complete')
 
@@ -157,28 +138,9 @@ def refreshone(id):
         abort(404, "No deals to update")
 
     price_dirty = find_deal(deal['target_url'], deal['css_selector'])
-    price_clean = get_clean_price(price_dirty)
 
-    id = deal['id']
-    title = deal['title']
-
-    message = f'{title} current price: {format_currency(price_clean)}'
-    print(message)
-    send_slack_message(message)
-            
-    db.execute(
-        'INSERT INTO deal_log (deal_id, deal_text)'
-        ' VALUES (?, ?)',
-        (id, price_clean)
-    )
-    db.commit()
-
-    db.execute(
-        'UPDATE deal SET latest_deal_text = ?'
-        ' WHERE id = ?',
-        (price_clean, id)
-    )
-    db.commit()
+    if price_dirty:
+        update_price_history(deal, price_dirty)
 
     flash('Refresh complete')
 
@@ -218,6 +180,32 @@ def get_deal_history(id):
     ).fetchall()
 
     return deal_history
+
+def update_price_history(deal, price_dirty):
+    db = get_db()
+
+    price_clean = get_clean_price(price_dirty)
+
+    id = deal['id']
+    title = deal['title']
+
+    message = f'{title} current price: {format_currency(price_clean)}'
+    print(message)
+    send_slack_message(message)
+            
+    db.execute(
+        'INSERT INTO deal_log (deal_id, deal_text)'
+        ' VALUES (?, ?)',
+        (id, price_clean)
+    )
+    db.commit()
+
+    db.execute(
+        'UPDATE deal SET latest_deal_text = ?'
+        ' WHERE id = ?',
+        (price_clean, id)
+    )
+    db.commit()
 
 def send_slack_message(message):
     import os
