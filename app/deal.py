@@ -93,13 +93,18 @@ def update(id):
 
     return render_template('deal/update.html', deal=deal)
 
-@bp.route('/<int:id>/history', methods=('GET', 'POST'))
-@login_required
+@bp.route('/<int:id>/history', methods=('GET',))
 def history(id):
-    deal = get_deal(id)
+    deal = get_deal(id, False)
     deal_history = get_deal_history(id)
-    history_graph = generate_history_graph(deal_history)
-    #history_graph = generate_test_graph()
+
+    if deal['latest_deal_text'] is None:
+        latest_deal_text = '0.00'
+    else:
+        latest_deal_text = float(deal['latest_deal_text'])
+
+    history_graph = generate_history_graph(deal_history, latest_deal_text)
+    
     return render_template('deal/history.html', deal=deal, deal_history=deal_history, history_graph=history_graph)
 
 @bp.route('/refresh')
@@ -143,6 +148,42 @@ def refresh():
 
     return redirect('/')
 
+@bp.route('/<int:id>/refreshone', methods=('GET',))
+@login_required
+def refreshone(id):
+    db = get_db()
+    deal = get_deal(id)
+    if deal is None:
+        abort(404, "No deals to update")
+
+    price_dirty = find_deal(deal['target_url'], deal['css_selector'])
+    price_clean = get_clean_price(price_dirty)
+
+    id = deal['id']
+    title = deal['title']
+
+    message = f'{title} current price: {format_currency(price_clean)}'
+    print(message)
+    send_slack_message(message)
+            
+    db.execute(
+        'INSERT INTO deal_log (deal_id, deal_text)'
+        ' VALUES (?, ?)',
+        (id, price_clean)
+    )
+    db.commit()
+
+    db.execute(
+        'UPDATE deal SET latest_deal_text = ?'
+        ' WHERE id = ?',
+        (price_clean, id)
+    )
+    db.commit()
+
+    flash('Refresh complete')
+
+    return redirect(url_for('deal.history', id=id))
+
 @bp.route('/<int:id>/delete', methods=('POST',))
 @login_required
 def delete(id):
@@ -154,7 +195,7 @@ def delete(id):
 
 def get_deal(id, check_author=True):
     deal = get_db().execute(
-        'SELECT d.id, user_id, title, target_url, css_selector, d.created, u.username'
+        'SELECT d.id, user_id, title, target_url, css_selector, latest_deal_text, d.created, u.username'
         ' FROM deal d JOIN user u ON d.user_id = u.id'
         ' WHERE d.id = ?',
         (id,)
