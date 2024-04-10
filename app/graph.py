@@ -42,7 +42,6 @@ def generate_history_graph(logs, lowest):
     ax = fig.subplots()
 
     # Set title and lowest value line
-    print(lowest)
     ax.axhline(lowest, linestyle='--')
     ax.set_title('Product price history')
 
