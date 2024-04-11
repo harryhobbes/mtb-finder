@@ -2,7 +2,7 @@
 
 {% block header %}
 <h1>
-    {% block title %}<a class="h1_action" href="{{ url_for('deal.index') }}">Deals</a>{% endblock %}
+    <a class="h1_action" href="{{ url_for('deal.index') }}">{% block title %}Deals{% endblock %}</a>
 </h1>
 {% endblock %}
 {% block content %}

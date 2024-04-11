@@ -34,6 +34,7 @@ def create_app(test_config=None):
 
     from . import deal
     app.register_blueprint(deal.bp)
+    deal.init_app(app)
 
     app.add_url_rule('/', endpoint='deal.index')
 

@@ -9,6 +9,8 @@ from app.db import get_db
 from app.finder import find_deal, get_clean_price
 from app.graph import generate_history_graph, generate_test_graph
 
+import click
+
 bp = Blueprint('deal', __name__, url_prefix='/deal')
 
 @bp.app_template_filter()
@@ -111,6 +113,22 @@ def history(id):
 @bp.route('/<int:id>/refresh', methods=('GET',))
 @login_required
 def refresh(id=None):
+    redirect_url = refresh_helper(id)
+
+    flash('Refresh complete')
+
+    return redirect(redirect_url)
+
+@click.command('refresh-deals')
+def refresh_deals():
+    """Refresh all deals"""
+    refresh_helper()
+    click.echo('Refresh complete')
+
+def init_app(app):
+    app.cli.add_command(refresh_deals)
+
+def refresh_helper(id=None):
     if id:
         deals = []
         deals.append(get_deal(id))
@@ -132,9 +150,7 @@ def refresh(id=None):
         if price_dirty:
             update_price_history(deal, price_dirty)
 
-    flash('Refresh complete')
-
-    return redirect(redirect_url)
+    return redirect_url
 
 @bp.route('/<int:id>/delete', methods=('POST',))
 @login_required
