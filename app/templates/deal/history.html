@@ -1,9 +1,10 @@
 {% extends 'base.html' %}
 
 {% block header %}
-<h1>{% block title %}Deals{% endblock %}</h1>
+<h1>
+    {% block title %}<a class="h1_action" href="{{ url_for('deal.index') }}">Deals</a>{% endblock %}
+</h1>
 {% endblock %}
-
 {% block content %}
 <article class="deal">
     <header>
@@ -14,9 +15,15 @@
         {% if g.user['id'] == deal['user_id'] %}
         <a class="action" href="{{ url_for('deal.update', id=deal['id']) }}">Edit</a>
         {% endif %}
-        <a class="action" href="{{ url_for('deal.refreshone', id=deal['id']) }}">Refresh</a>
+        <a class="action" href="{{ url_for('deal.refresh', id=deal['id']) }}">Refresh</a>
     </header>
     <p class="body">{{ deal['target_url'] }}</p>
+    <p class="body">
+        Latest: {% if deal['latest_deal_text'] %}{{ deal['latest_deal_text'] | format_currency }}{% endif %}
+    </p>
+    <p class="body">
+        Lowest: {% if deal['lowest_deal_text'] %}{{ deal['lowest_deal_text'] | format_currency }}{% endif %}
+    </p>
 </article>
 <hr>
 <article class="log_history">

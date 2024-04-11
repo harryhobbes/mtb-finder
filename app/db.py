@@ -28,6 +28,10 @@ def init_db():
     with current_app.open_resource('schema.sql') as f:
         db.executescript(f.read().decode('utf8'))
 
+def migrate_db():
+    db = get_db()
+    with current_app.open_resource('migration.sql') as f:
+        db.executescript(f.read().decode('utf8'))
 
 @click.command('init-db')
 def init_db_command():
@@ -38,3 +42,10 @@ def init_db_command():
 def init_app(app):
     app.teardown_appcontext(close_db)
     app.cli.add_command(init_db_command)
+    app.cli.add_command(migrate_db_command)
+
+@click.command('migrate-db')
+def migrate_db_command():
+    """Update DB with migration script"""
+    migrate_db()
+    click.echo('Migrations complete')

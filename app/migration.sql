@@ -1,0 +1,2 @@
+-- ALTER TABLE deal 
+-- ADD COLUMN lowest_deal_text text;

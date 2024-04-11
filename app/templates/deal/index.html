@@ -23,7 +23,12 @@
     </header>
     <p class="body">{{ deal['target_url'] }}</p>
     <p class="body">{{ deal['css_selector'] }}</p>
-    <p class="body">{% if deal['latest_deal_text'] %}{{ deal['latest_deal_text'] | format_currency }}{% endif %}</p>
+    <p class="body">
+        Latest: {% if deal['latest_deal_text'] %}{{ deal['latest_deal_text'] | format_currency }}{% endif %}
+    </p>
+    <p class="body">
+        Lowest: {% if deal['lowest_deal_text'] %}{{ deal['lowest_deal_text'] | format_currency }}{% endif %}
+    </p>
 </article>
 {% if not loop.last %}
 <hr>

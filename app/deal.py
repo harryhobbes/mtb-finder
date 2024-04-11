@@ -19,7 +19,7 @@ def format_currency(price):
 def index():
     db = get_db()
     deals = db.execute(
-        'SELECT d.id, user_id, title, target_url, css_selector, latest_deal_text, d.created, u.username'
+        'SELECT d.id, user_id, title, target_url, css_selector, latest_deal_text, lowest_deal_text, d.created, u.username'
         ' FROM deal d JOIN user u ON d.user_id = u.id'
         ' ORDER BY d.title ASC'
     ).fetchall()
@@ -98,23 +98,30 @@ def history(id):
     deal = get_deal(id, False)
     deal_history = get_deal_history(id)
 
-    if deal['latest_deal_text'] is None:
-        latest_deal_text = '0.00'
+    if deal['lowest_deal_text'] is None:
+        lowest = '0.00'
     else:
-        latest_deal_text = float(deal['latest_deal_text'])
+        lowest = float(deal['lowest_deal_text'])
 
-    history_graph = generate_history_graph(deal_history, latest_deal_text)
+    history_graph = generate_history_graph(deal_history, lowest)
     
     return render_template('deal/history.html', deal=deal, deal_history=deal_history, history_graph=history_graph)
 
 @bp.route('/refresh')
+@bp.route('/<int:id>/refresh', methods=('GET',))
 @login_required
-def refresh():
-    db = get_db()
-    deals = db.execute(
-        'SELECT id, title, target_url, css_selector'
-        ' FROM deal'
-    ).fetchall()
+def refresh(id=None):
+    if id:
+        deals = []
+        deals.append(get_deal(id))
+        redirect_url = url_for('deal.history', id=id)
+    else:
+        db = get_db()
+        deals = db.execute(
+            'SELECT id, title, target_url, css_selector, lowest_deal_text'
+            ' FROM deal'
+        ).fetchall()
+        redirect_url = '/'
 
     if deals is None:
         abort(404, "No deals to update")
@@ -127,24 +134,7 @@ def refresh():
 
     flash('Refresh complete')
 
-    return redirect('/')
-
-@bp.route('/<int:id>/refreshone', methods=('GET',))
-@login_required
-def refreshone(id):
-    db = get_db()
-    deal = get_deal(id)
-    if deal is None:
-        abort(404, "No deals to update")
-
-    price_dirty = find_deal(deal['target_url'], deal['css_selector'])
-
-    if price_dirty:
-        update_price_history(deal, price_dirty)
-
-    flash('Refresh complete')
-
-    return redirect(url_for('deal.history', id=id))
+    return redirect(redirect_url)
 
 @bp.route('/<int:id>/delete', methods=('POST',))
 @login_required
@@ -157,7 +147,7 @@ def delete(id):
 
 def get_deal(id, check_author=True):
     deal = get_db().execute(
-        'SELECT d.id, user_id, title, target_url, css_selector, latest_deal_text, d.created, u.username'
+        'SELECT d.id, user_id, title, target_url, css_selector, latest_deal_text, lowest_deal_text, d.created, u.username'
         ' FROM deal d JOIN user u ON d.user_id = u.id'
         ' WHERE d.id = ?',
         (id,)
@@ -188,10 +178,6 @@ def update_price_history(deal, price_dirty):
 
     id = deal['id']
     title = deal['title']
-
-    message = f'{title} current price: {format_currency(price_clean)}'
-    print(message)
-    send_slack_message(message)
             
     db.execute(
         'INSERT INTO deal_log (deal_id, deal_text)'
@@ -200,12 +186,25 @@ def update_price_history(deal, price_dirty):
     )
     db.commit()
 
-    db.execute(
-        'UPDATE deal SET latest_deal_text = ?'
-        ' WHERE id = ?',
-        (price_clean, id)
-    )
+    if deal['lowest_deal_text'] is None or price_clean < deal['lowest_deal_text']:
+        message = f'{title} NEW LOWEST PRICE: {format_currency(price_clean)}'
+        db.execute(
+            'UPDATE deal SET latest_deal_text = ?, lowest_deal_text = ?'
+            ' WHERE id = ?',
+            (price_clean, price_clean, id)
+        )
+    else:
+        message = f'{title} current price: {format_currency(price_clean)}'
+        db.execute(
+            'UPDATE deal SET latest_deal_text = ?'
+            ' WHERE id = ?',
+            (price_clean, id)
+        )
+
     db.commit()
+
+    print(message)
+    send_slack_message(message)
 
 def send_slack_message(message):
     import os
