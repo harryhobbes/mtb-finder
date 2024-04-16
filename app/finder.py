@@ -51,7 +51,7 @@ def find_dynamic_deal(target_url, css_selector):
         options = webdriver.ChromeOptions()
         options.add_argument("--headless=new")
         options.add_argument(f'--user-agent={user_agent}')
-        options.binary_location = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+        options.binary_location = os.environ["CHROMIUM_BINARY"]
         driver = webdriver.Chrome(options=options)
 
         driver.get(target_url)
@@ -64,7 +64,8 @@ def find_dynamic_deal(target_url, css_selector):
         
         element = soup.css.select_one(css_selector)
         price = element.text if element else None
-    except:
+    except Exception as error:
+        print("An exception occurred:", type(error).__name__, "–", error)
         print('Price grab failed. Likely an issue with the source or CSS selector')
 
     return price

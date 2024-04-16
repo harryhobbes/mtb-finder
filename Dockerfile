@@ -40,6 +40,10 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
     python -m pip install -r requirements.txt
 
+# Install Chromium. Could be a better way eg. Chromium docker container
+# https://github.com/linuxserver/docker-chromium
+RUN apt-get update && apt-get install chromium -y --no-install-recommends
+
 # Switch to the non-privileged user to run the application.
 USER appuser
 
