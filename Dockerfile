@@ -7,7 +7,7 @@
 # Want to help us make this template better? Share your feedback here: https://forms.gle/ybq9Krt8jtBL3iCk7
 
 ARG PYTHON_VERSION=3.8.5
-FROM python:${PYTHON_VERSION}-slim as base
+FROM --platform=linux/amd64 python:${PYTHON_VERSION}-slim as base
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -26,7 +26,7 @@ ARG UID=10001
 RUN adduser \
     --disabled-password \
     --gecos "" \
-    --home "/nonexistent" \
+    --home "/web/userdata" \
     --shell "/sbin/nologin" \
     --no-create-home \
     --uid "${UID}" \
@@ -37,12 +37,26 @@ RUN adduser \
 # Leverage a bind mount to requirements.txt to avoid having to copy them into
 # into this layer.
 RUN --mount=type=cache,target=/root/.cache/pip \
+    python -m pip install --upgrade pip 
+RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
     python -m pip install -r requirements.txt
 
 # Install Chromium. Could be a better way eg. Chromium docker container
 # https://github.com/linuxserver/docker-chromium
-RUN apt-get update && apt-get install chromium -y --no-install-recommends
+#RUN apt-get update && apt-get install chromium -y --no-install-recommends
+
+# Install the Google Chrome binary
+# Adding trusting keys to apt for repositories
+RUN apt-get -y update && apt-get install -y gnupg2 && apt-get install -y wget 
+
+RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
+
+# Adding Google Chrome to the repositories
+RUN sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
+
+# Updating apt to see and install Google Chrome
+RUN apt-get -y update && apt-get install -y google-chrome-stable
 
 # Switch to the non-privileged user to run the application.
 USER appuser

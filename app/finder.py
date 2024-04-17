@@ -10,13 +10,6 @@ import re
 
 def get_clean_price(price):
     return price.replace("$","").replace(",","")
-
-def send_update(message):
-    if (current_app.config['ON_UNRAID']):
-        command_line = ['/usr/local/emhttp/webGui/scripts/notify', '-i', 'alert', '-s', 'Daily Collosus Price Update', '-d', message]
-        process = subprocess.Popen(command_line, stdout=subprocess.PIPE, shell=False)
-    else:
-        print(message)
         
 def find_deal(target_url, css_selector):
     price = None
@@ -46,12 +39,23 @@ def find_dynamic_deal(target_url, css_selector):
     try:
         # Create a UserAgent object
         ua = UserAgent()
-        # Set a random User-Agent header in the request
-        user_agent = ua.random
         options = webdriver.ChromeOptions()
         options.add_argument("--headless=new")
+        # Don't run in sandbox mode (comes with security issues, but good for debugging)
+        options.add_argument('--no-sandbox')
+
+        # Use /tmp instead of /dev/shm due to storage issues
+        options.add_argument('--disable-dev-shm-usage')
+        
+        # Set the Chrome user director
+        #user_dir = os.environ["CHROMIUM_USER_DIR"]
+        #options.add_argument(f'--user-data-dir={user_dir}')
+
+        # Set a random User-Agent header in the request
+        user_agent = ua.random
         options.add_argument(f'--user-agent={user_agent}')
-        options.binary_location = os.environ["CHROMIUM_BINARY"]
+
+        #options.binary_location = os.environ["CHROMIUM_BINARY"]
         driver = webdriver.Chrome(options=options)
 
         driver.get(target_url)

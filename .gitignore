@@ -4,3 +4,4 @@ mtb-finder.txt
 instance/
 __pycache__
 .env
+userdata/
