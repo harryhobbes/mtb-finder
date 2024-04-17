@@ -1,5 +1,4 @@
 beautifulsoup4==4.12.3
-chromedriver
 datetime
 fake-useragent
 flask
