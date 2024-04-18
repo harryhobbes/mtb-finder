@@ -223,16 +223,19 @@ def update_price_history(deal, price_dirty):
     send_slack_message(message)
 
 def send_slack_message(message):
-    import os
-    from slack_sdk import WebClient
-    
-    slack_token = os.environ["SLACK_API_KEY"]
-    
-    client = WebClient(token=slack_token)
+    try:
+        import os
+        from slack_sdk import WebClient
+        
+        slack_token = os.environ["SLACK_API_KEY"]
+        
+        client = WebClient(token=slack_token)
 
-    # Send a message
-    client.chat_postMessage(
-        channel="general", 
-        text=message, 
-        username="MTB Finder"
-    )
+        # Send a message
+        client.chat_postMessage(
+            channel="general", 
+            text=message, 
+            username="MTB Finder"
+        )
+    except:
+        print('Error: Likely no Slack SDK or SLACK_API_KEY')
