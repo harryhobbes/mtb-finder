@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>
+    <a class="h1_action" href="{{ url_for('deal.index') }}">{% block title %}Deals{% endblock %}</a>
+</h1>
+{% endblock %}
+{% block content %}
+<article class="deal">
+    <header>
+        <div>
+            <h1>{{ deal['title'] }}</h1>
+            <div class="about">by {{ deal['username'] }} on {{ deal['created'].strftime('%Y-%m-%d') }}</div>
+        </div>
+        {% if g.user['id'] == deal['user_id'] %}
+        <a class="action" href="{{ url_for('deal.update', id=deal['id']) }}">Edit</a>
+        {% endif %}
+        <a class="action" href="{{ url_for('deal.refresh', id=deal['id']) }}">Refresh</a>
+    </header>
+    <p class="body">{{ deal['target_url'] }}</p>
+    <p class="body">
+        Latest: {% if deal['latest_deal_text'] %}{{ deal['latest_deal_text'] | format_currency }}{% endif %}
+    </p>
+    <p class="body">
+        Lowest: {% if deal['lowest_deal_text'] %}{{ deal['lowest_deal_text'] | format_currency }}{% endif %}
+    </p>
+</article>
+<hr>
+<article class="log_history">
+    {{ history_graph | safe }}
+</article>
+<hr>
+<table class="log_history_table">
+    <thead>
+        <tr>
+            <th>Date</th>
+            <th>Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for log in deal_history %}
+        <tr class="log_history_row">
+            <td>{{ log['created'] }}</td>
+            <td>{{ log['deal_text'] | format_currency }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

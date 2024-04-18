@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}Edit "{{ deal['title'] }}"{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<form method="post">
+    <label for="title">Title</label>
+    <input name="title" id="title" value="{{ request.form['title'] or deal['title'] }}" required>
+    <label for="target_url">Target URL</label>
+    <input name="target_url" id="target_url" value="{{ request.form['target_url'] or deal['target_url'] }}" required>
+    <label for="css_selector">CSS Selector</label>
+    <input name="css_selector" id="css_selector" value="{{ request.form['css_selector'] or deal['css_selector']}}"
+        required>
+    <input type="submit" value="Save">
+</form>
+<hr>
+<form action="{{ url_for('deal.delete', id=deal['id']) }}" method="post">
+    <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+</form>
+{% endblock %}
