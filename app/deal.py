@@ -138,7 +138,12 @@ def refresh_helper(id=None):
         deals = db.execute(
             'SELECT id, title, target_url, css_selector, lowest_deal_text'
             ' FROM deal'
+            ' WHERE id NOT IN ('
+                ' SELECT DISTINCT deal_id FROM deal_log'
+                ' WHERE created > date("now","-1 day")'
+            ' ) LIMIT 10'
         ).fetchall()
+        print(f"Found {len(deals)} deals to be refreshed")
         redirect_url = '/'
 
     if deals is None:
