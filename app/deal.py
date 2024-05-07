@@ -1,3 +1,5 @@
+import os
+
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, url_for
 )
@@ -10,6 +12,9 @@ from app.finder import find_deal, get_clean_price
 from app.graph import generate_history_graph, generate_test_graph
 
 import click
+
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 bp = Blueprint('deal', __name__, url_prefix='/deal')
 
@@ -127,6 +132,14 @@ def refresh_deals():
 
 def init_app(app):
     app.cli.add_command(refresh_deals)
+    
+    # Add a scheduler to run deal refresh on a set interval
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(
+        func=refresh_helper,
+        trigger=CronTrigger(minute=os.getenv("CRON_INTERVAL",60)),
+    )
+    scheduler.start()
 
 def refresh_helper(id=None):
     if id:
@@ -229,7 +242,6 @@ def update_price_history(deal, price_dirty):
 
 def send_slack_message(message):
     try:
-        import os
         from slack_sdk import WebClient
         
         slack_token = os.environ["SLACK_API_KEY"]
