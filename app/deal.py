@@ -132,14 +132,6 @@ def refresh_deals():
 
 def init_app(app):
     app.cli.add_command(refresh_deals)
-    
-    # Add a scheduler to run deal refresh on a set interval
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(
-        func=refresh_helper,
-        trigger=CronTrigger(minute=os.getenv("CRON_INTERVAL",60)),
-    )
-    scheduler.start()
 
 def refresh_helper(id=None):
     if id:

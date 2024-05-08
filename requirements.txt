@@ -1,8 +1,8 @@
-apscheduler
 beautifulsoup4==4.12.3
 datetime
 fake-useragent
 flask
+Flask-APScheduler
 gunicorn
 matplotlib==3.7.5
 pandas

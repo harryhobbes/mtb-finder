@@ -37,4 +37,7 @@ def create_app(test_config=None):
 
     app.add_url_rule('/', endpoint='deal.index')
 
+    from . import tasks
+    tasks.init_app(app)
+    
     return app
