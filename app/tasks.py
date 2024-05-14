@@ -14,7 +14,7 @@ def init_app(app):
     scheduler.add_job(
         func=run_scheduled_tasks,
         trigger='cron',
-        minute=os.getenv("CRON_INTERVAL",60),
+        minute=os.getenv("CRON_INTERVAL",59),
         id="refresh_deals",
     )
     
