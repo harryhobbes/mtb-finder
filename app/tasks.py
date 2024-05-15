@@ -1,11 +1,21 @@
 import os
 
+import click
+
 from app.deal import refresh_helper
 from flask_apscheduler import APScheduler
 
 scheduler = APScheduler()
 
+@click.command('list-tasks')
+def list_tasks():
+    """List all scheduled tasks"""
+    for job in scheduler.get_jobs():
+        print(job)
+
 def init_app(app):    
+
+    app.cli.add_command(list_tasks)    
     
     scheduler.init_app(app)
     scheduler.start()

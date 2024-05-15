@@ -145,8 +145,8 @@ def refresh_helper(id=None):
             ' FROM deal'
             ' WHERE id NOT IN ('
                 ' SELECT DISTINCT deal_id FROM deal_log'
-                ' WHERE created > date("now","-1 day")'
-            ' ) LIMIT 10'
+                ' WHERE created > date("now", ?)'
+            ' ) LIMIT 10', (os.getenv("REFRESH_INTERVAL", "-1 day"),)
         ).fetchall()
         print(f"Found {len(deals)} deals to be refreshed")
         redirect_url = '/'
