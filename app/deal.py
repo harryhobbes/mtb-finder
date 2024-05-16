@@ -20,6 +20,7 @@ bp = Blueprint('deal', __name__, url_prefix='/deal')
 
 def init_app(app):
     app.cli.add_command(refresh_deals)
+    app.cli.add_command(cleanup_deals)
 
 @bp.app_template_filter()
 def format_currency(price):
@@ -134,7 +135,7 @@ def refresh_deals():
     click.echo('Refresh complete')
 
 @click.command('cleanup-deals')
-def refresh_deals():
+def cleanup_deals():
     """Cleanup the deals"""
     cleanup_helper()
     click.echo('Cleanup complete')
