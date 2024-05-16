@@ -18,6 +18,9 @@ from apscheduler.triggers.cron import CronTrigger
 
 bp = Blueprint('deal', __name__, url_prefix='/deal')
 
+def init_app(app):
+    app.cli.add_command(refresh_deals)
+
 @bp.app_template_filter()
 def format_currency(price):
     return f"${float(price):,.2f}"
@@ -130,8 +133,11 @@ def refresh_deals():
     refresh_helper()
     click.echo('Refresh complete')
 
-def init_app(app):
-    app.cli.add_command(refresh_deals)
+@click.command('cleanup-deals')
+def refresh_deals():
+    """Cleanup the deals"""
+    cleanup_helper()
+    click.echo('Cleanup complete')
 
 def refresh_helper(id=None):
     if id:
@@ -145,7 +151,7 @@ def refresh_helper(id=None):
             ' FROM deal'
             ' WHERE id NOT IN ('
                 ' SELECT DISTINCT deal_id FROM deal_log'
-                ' WHERE created > date("now", ?)'
+                ' WHERE created > datetime("now", ?)'
             ' ) LIMIT 10', (os.getenv("REFRESH_INTERVAL", "-1 day"),)
         ).fetchall()
         print(f"Found {len(deals)} deals to be refreshed")
@@ -161,6 +167,12 @@ def refresh_helper(id=None):
             update_price_history(deal, price_dirty)
 
     return redirect_url
+
+def cleanup_helper():
+    db = get_db()
+    print("Cleanup $0 deal logs")
+    db.execute('DELETE FROM deal_log WHERE deal_text IS NULL or deal_text LIKE ?', ("0.00",))
+    db.commit()
 
 @bp.route('/<int:id>/delete', methods=('POST',))
 @login_required
