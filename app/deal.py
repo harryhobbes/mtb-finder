@@ -232,6 +232,7 @@ def update_price_history(deal, price_dirty):
             ' WHERE id = ?',
             (price_clean, price_clean, id)
         )
+        send_slack_message(message)
     else:
         message = f'{title} current price: {format_currency(price_clean)}'
         db.execute(
@@ -243,7 +244,6 @@ def update_price_history(deal, price_dirty):
     db.commit()
 
     print(message)
-    send_slack_message(message)
 
 def send_slack_message(message):
     try:
