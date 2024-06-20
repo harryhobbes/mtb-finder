@@ -1,12 +1,25 @@
 DROP TABLE IF EXISTS user;
 DROP TABLE IF EXISTS deal;
 DROP TABLE IF EXISTS deal_log;
+DROP TABLE IF EXISTS website;
+DROP TABLE IF EXISTS deal_comms;
 
 CREATE TABLE user (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   username TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
+  slack_api_key TEXT,
   created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE website (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  base_url TEXT NOT NULL,
+  css_selector TEXT NOT NULL,
+  created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES user (id)
 );
 
 CREATE TABLE deal (
@@ -17,8 +30,11 @@ CREATE TABLE deal (
   css_selector TEXT NOT NULL,
   latest_deal_text TEXT,
   lowest_deal_text TEXT,
+  website_id INTEGER NOT NULL DEFAULT '',
+  access TEXT NOT NULL DEFAULT 'public',
   created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (user_id) REFERENCES user (id)
+  FOREIGN KEY (user_id) REFERENCES user (id),
+  FOREIGN KEY (website_id) REFERENCES website (id)
 );
 
 CREATE TABLE deal_log (
@@ -27,4 +43,12 @@ CREATE TABLE deal_log (
   created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   deal_text TEXT NOT NULL,
   FOREIGN KEY (deal_id) REFERENCES deal (id)
+);
+
+CREATE TABLE deal_comms (
+    deal_id INTEGER KEY,
+    user_id INTEGER KEY,
+    comms_type TEXT NOT NULL DEFAULT 'ALL',
+    FOREIGN KEY (deal_id) REFERENCES deal (id),
+    FOREIGN KEY (user_id) REFERENCES user (id)
 );

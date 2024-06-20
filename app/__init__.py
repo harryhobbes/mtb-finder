@@ -39,5 +39,8 @@ def create_app(test_config=None):
 
     from . import tasks
     tasks.init_app(app)
+
+    from . import user
+    app.register_blueprint(user.bp)
     
     return app
