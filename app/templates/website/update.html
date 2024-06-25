@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}Edit "{{ user['username'] }}"{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<form method="post">
+    <label for="username">Username</label>
+    <input name="username" id="username" disabled readonly value="{{ user['username'] }}">
+    <label for="slack_api_key">Slack API Key</label>
+    <input name="slack_api_key" id="slack_api_key" value="{{ request.form['slack_api_key'] or user['slack_api_key'] }}"
+        required>
+    <input type="submit" value="Save">
+</form>
+<hr>
+<form action="{{ url_for('user.delete', id=user['id']) }}" method="post">
+    <input class="danger" type="submit" value="Delete" onclick="return confirm('Are you sure?');">
+</form>
+{% endblock %}
