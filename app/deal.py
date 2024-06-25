@@ -200,11 +200,13 @@ def get_deal(id, check_author=True):
 
     return deal
 
-def get_deal_history(id):
+def get_deal_history(id, orderby = 'DESC'):
+    orderby = 'DESC' if orderby == 'DESC' else 'ASC'
     deal_history = get_db().execute(
         'SELECT created, deal_text'
         ' FROM deal_log'
-        ' WHERE deal_id = ?',
+        ' WHERE deal_id = ?'
+        f' ORDER BY created {orderby}',
         (id,)
     ).fetchall()
 
