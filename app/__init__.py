@@ -37,10 +37,13 @@ def create_app(test_config=None):
 
     app.add_url_rule('/', endpoint='deal.index')
 
-    from . import tasks
-    tasks.init_app(app)
+    from . import task
+    task.init_app(app)
 
     from . import user
     app.register_blueprint(user.bp)
+
+    from . import website
+    app.register_blueprint(website.bp)
     
     return app

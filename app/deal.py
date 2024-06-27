@@ -72,7 +72,7 @@ def create():
 @bp.route('/<int:id>/update', methods=('GET', 'POST'))
 @login_required
 def update(id):
-    deal = get_deal(id)
+    deal = get_record(id)
 
     if request.method == 'POST':
         title = request.form['title']
@@ -106,7 +106,7 @@ def update(id):
 
 @bp.route('/<int:id>/history', methods=('GET',))
 def history(id):
-    deal = get_deal(id, False)
+    deal = get_record(id, False)
     deal_history = get_deal_history(id)
 
     if deal['lowest_deal_text'] is None:
@@ -143,7 +143,7 @@ def cleanup_deals():
 def refresh_helper(id=None):
     if id:
         deals = []
-        deals.append(get_deal(id))
+        deals.append(get_record(id))
         redirect_url = url_for('deal.history', id=id)
     else:
         db = get_db()
@@ -178,13 +178,13 @@ def cleanup_helper():
 @bp.route('/<int:id>/delete', methods=('POST',))
 @login_required
 def delete(id):
-    get_deal(id)
+    get_record(id)
     db = get_db()
     db.execute('DELETE FROM deal WHERE id = ?', (id,))
     db.commit()
     return redirect(url_for('deal.index'))
 
-def get_deal(id, check_author=True):
+def get_record(id, check_author=True):
     deal = get_db().execute(
         'SELECT d.id, user_id, title, target_url, css_selector, latest_deal_text, lowest_deal_text, d.created, u.username'
         ' FROM deal d JOIN user u ON d.user_id = u.id'
