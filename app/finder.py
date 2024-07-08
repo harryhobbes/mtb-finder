@@ -8,8 +8,14 @@ import os.path
 import subprocess
 import re
 
-def get_clean_price(price):
-    return price.replace("$","").replace(",","")
+# Check the element and confirm it has valid text for our records
+def get_valid_element_text(element):
+    try:
+        price = element.text.rstrip()
+    except ValueError:
+        price = None
+        
+    return price
         
 def find_deal(target_url, css_selector):
     price = None
@@ -22,10 +28,10 @@ def find_deal(target_url, css_selector):
         page = requests.get(target_url, headers=headers)
         soup = BeautifulSoup(page.text, 'html.parser')
         
-        element = soup.css.select_one(css_selector)
-        if element:
-            price = element.text
-        else:
+        # Get an element from the HTML
+        price = get_valid_element_text(soup.css.select_one(css_selector))
+
+        if price == None or not price:
             print('Price grab failed. Likely dynamic content. Trying advanced Finder')
             price = find_dynamic_deal(target_url, css_selector)
     except:
@@ -66,8 +72,7 @@ def find_dynamic_deal(target_url, css_selector):
         html = driver.page_source
         soup = BeautifulSoup(html, 'html.parser')
         
-        element = soup.css.select_one(css_selector)
-        price = element.text if element else None
+        price = get_valid_element_text(soup.css.select_one(css_selector))
     except Exception as error:
         print("An exception occurred:", type(error).__name__, "–", error)
         print('Price grab failed. Likely an issue with the source or CSS selector')

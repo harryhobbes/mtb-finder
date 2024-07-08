@@ -8,7 +8,7 @@ from werkzeug.exceptions import abort
 from app.auth import login_required
 from app.db import get_db
 
-from app.finder import find_deal, get_clean_price
+from app.finder import find_deal
 from app.graph import generate_history_graph, generate_test_graph
 
 import click
@@ -24,7 +24,16 @@ def init_app(app):
 
 @bp.app_template_filter()
 def format_currency(price):
-    return f"${float(price):,.2f}"
+    try:
+        price = f"${float(price):,.2f}"
+    except ValueError:
+        print("Not a float")
+        price = "$0.00"
+    
+    return price
+
+def get_clean_price(price):
+    return price.replace("$","").replace(",","")
 
 @bp.route('/')
 def index():
@@ -110,7 +119,7 @@ def history(id):
     deal_history = get_deal_history(id)
 
     if deal['lowest_deal_text'] is None:
-        lowest = '0.00'
+        lowest = float('0.00')
     else:
         lowest = float(deal['lowest_deal_text'])
 
@@ -166,6 +175,9 @@ def refresh_helper(id=None):
 
         if price_dirty:
             update_price_history(deal, price_dirty)
+        else:
+            print('No price found')
+            flash('No price found')
 
     return redirect_url
 

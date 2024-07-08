@@ -62,7 +62,14 @@ def generate_history_graph(logs, lowest):
     values = []
     for log in logs:
         dates.append(log['created'])
-        values.append(float(log['deal_text']))
+        
+        try:
+            price = float(log['deal_text'])
+        except ValueError:
+            print("Not a float")
+            price = float(0)
+
+        values.append(price)
 
     ax.plot_date(dates, values, linestyle='-')
 
