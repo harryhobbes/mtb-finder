@@ -8,10 +8,19 @@
 <form method="post">
     <label for="title">Title</label>
     <input name="title" id="title" value="{{ request.form['title'] }}" required>
-    <label for="target_url">Target URL</label>
+    <label for="website_id">Website</label>
+    <select name="website_id" id="website_id" required>
+        {% for website in websites %}
+        <option value="{{ website['id'] }}" 
+            {% if website['id'] == request.form['website_id'] %}
+             selected 
+            {% endif %}>
+            {{ website['title'] }} - {{ website['base_url'] }}
+        </option>
+        {% endfor %}
+    </select>
+    <label for="target_url">Product URL</label>
     <input name="target_url" id="target_url" value="{{ request.form['target_url'] }}" required>
-    <label for="css_selector">CSS Selector</label>
-    <input name="css_selector" id="css_selector" value="{{ request.form['css_selector'] }}" required>
     <input type="submit" value="Save">
 </form>
 {% endblock %}

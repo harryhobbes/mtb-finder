@@ -1,4 +1,4 @@
-import os
+import os, validators
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, url_for
@@ -26,7 +26,7 @@ def index():
 def create():
     if request.method == 'POST':
         title = request.form['title']
-        base_url = request.form['base_url']
+        base_url = request.form['base_url'].strip('/')
         css_selector = request.form['css_selector']
         
         error = False
@@ -34,9 +34,9 @@ def create():
             error = True
             flash('Title is required.')
         
-        if not base_url:
+        if not base_url or not validators.url(base_url):
             error = True
-            flash('Base URL is required.')
+            flash('Base URL is required. Must be a valid URL')
 
         if not css_selector:
             error = True
@@ -61,7 +61,7 @@ def update(id):
 
     if request.method == 'POST':
         title = request.form['title']
-        base_url = request.form['base_url']
+        base_url = request.form['base_url'].strip('/')
         css_selector = request.form['css_selector']
 
         error = False
@@ -69,9 +69,9 @@ def update(id):
             error = True
             flash('Title is required.')
         
-        if not base_url:
+        if not base_url or not validators.url(base_url):
             error = True
-            flash('Base URL is required.')
+            flash('Base URL is required. Must be a valid URL')
 
         if not css_selector:
             error = True

@@ -1,23 +1,17 @@
 {% extends 'base.html' %}
 
 {% block header %}
-<h1>
-    <a class="h1_action" href="{{ url_for('deal.index') }}">{% block title %}Deals{% endblock %}</a>
-</h1>
+    <h1>{% block title %}{{ deal['full_title'] }}{% endblock %}</h1>
+    {% if g.user['id'] == deal['user_id'] %}
+    <a class="action" href="{{ url_for('deal.update', id=deal['id']) }}">Edit</a>
+    {% endif %}
+    <a class="action" href="{{ url_for('deal.refresh', id=deal['id']) }}">Refresh</a>
 {% endblock %}
+
 {% block content %}
 <article class="deal">
-    <header>
-        <div>
-            <h1>{{ deal['title'] }}</h1>
-            <div class="about">by {{ deal['username'] }} on {{ deal['created'].strftime('%Y-%m-%d') }}</div>
-        </div>
-        {% if g.user['id'] == deal['user_id'] %}
-        <a class="action" href="{{ url_for('deal.update', id=deal['id']) }}">Edit</a>
-        {% endif %}
-        <a class="action" href="{{ url_for('deal.refresh', id=deal['id']) }}">Refresh</a>
-    </header>
-    <p class="body">{{ deal['target_url'] }}</p>
+    <div class="about">by {{ deal['username'] }} on {{ deal['created'].strftime('%Y-%m-%d') }}</div>
+    <p class="body"><a href="{{ deal['product_url'] }}">Go to product</a></p>
     <p class="body">
         Latest: {% if deal['latest_deal_text'] %}{{ deal['latest_deal_text'] | format_currency }}{% endif %}
     </p>

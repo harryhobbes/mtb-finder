@@ -35,23 +35,41 @@ def format_currency(price):
 def get_clean_price(price):
     return price.replace("$","").replace(",","")
 
+def get_select_many_query(append = ''):
+    query = ('SELECT d.id, d.user_id, latest_deal_text, lowest_deal_text,'
+    ' d.title, d.created, u.username,'
+    ' w.base_url, d.target_url, w.css_selector,'
+    ' concat(w.base_url, "/", d.target_url) as product_url,'
+    ' concat(w.title, " - ", d.title) as full_title'
+    ' FROM deal d'
+    ' LEFT JOIN user u ON d.user_id = u.id'
+    ' LEFT JOIN website w ON w.id = d.website_id'
+    ) + append
+
+    return query
+
 @bp.route('/')
 def index():
     db = get_db()
-    deals = db.execute(
-        'SELECT d.id, user_id, title, target_url, css_selector, latest_deal_text, lowest_deal_text, d.created, u.username'
-        ' FROM deal d JOIN user u ON d.user_id = u.id'
-        ' ORDER BY d.title ASC'
-    ).fetchall()
+    query = get_select_many_query(' ORDER BY d.title ASC')
+    deals = db.execute(query).fetchall()
     return render_template('deal/index.html', deals=deals)
 
 @bp.route('/create', methods=('GET', 'POST'))
 @login_required
 def create():
+
+    db = get_db()
+    websites = db.execute(
+        'SELECT u.*'
+        ' FROM website u'
+        ' ORDER BY u.title ASC'
+    ).fetchall()
+
     if request.method == 'POST':
         title = request.form['title']
-        target_url = request.form['target_url']
-        css_selector = request.form['css_selector']
+        target_url = request.form['target_url'].strip('/')
+        website_id = request.form['website_id']
         
         error = False
         if not title:
@@ -62,32 +80,39 @@ def create():
             error = True
             flash('Target URL is required.')
 
-        if not css_selector:
+        if not website_id:
             error = True
-            flash('CSS Selector is required.')
+            flash('Website is required.')
 
         if not error:
             db = get_db()
             db.execute(
-                'INSERT INTO deal (title, target_url, css_selector, user_id)'
-                ' VALUES (?, ?, ?, ?)',
-                (title, target_url, css_selector, g.user['id'])
+                'INSERT INTO deal (title, target_url, css_selector, website_id, user_id)'
+                ' VALUES (?, ?, ?, ?, ?)',
+                (title, target_url, '', website_id, g.user['id'])
             )
             db.commit()
             return redirect(url_for('deal.index'))
 
-    return render_template('deal/create.html')
+    return render_template('deal/create.html', websites=websites)
 
 @bp.route('/<int:id>/update', methods=('GET', 'POST'))
 @login_required
 def update(id):
     deal = get_record(id)
 
+    db = get_db()
+    websites = db.execute(
+        'SELECT u.*'
+        ' FROM website u'
+        ' ORDER BY u.title ASC'
+    ).fetchall()
+
     if request.method == 'POST':
         title = request.form['title']
-        target_url = request.form['target_url']
-        css_selector = request.form['css_selector']
-
+        target_url = request.form['target_url'].strip('/')
+        website_id = request.form['website_id']
+        
         error = False
         if not title:
             error = True
@@ -97,21 +122,21 @@ def update(id):
             error = True
             flash('Target URL is required.')
 
-        if not css_selector:
+        if not website_id:
             error = True
-            flash('CSS Selector is required.')
+            flash('Website is required.')
 
         if not error:
             db = get_db()
             db.execute(
-                'UPDATE deal SET title = ?, target_url = ?, css_selector = ?'
+                'UPDATE deal SET title = ?, target_url = ?, website_id = ?'
                 ' WHERE id = ?',
-                (title, target_url, css_selector, id)
+                (title, target_url, website_id, id)
             )
             db.commit()
-            return redirect(url_for('deal.index'))
+            return redirect(url_for('deal.history', id=id))
 
-    return render_template('deal/update.html', deal=deal)
+    return render_template('deal/update.html', deal=deal, websites=websites)
 
 @bp.route('/<int:id>/history', methods=('GET',))
 def history(id):
@@ -156,14 +181,15 @@ def refresh_helper(id=None):
         redirect_url = url_for('deal.history', id=id)
     else:
         db = get_db()
-        deals = db.execute(
-            'SELECT id, title, target_url, css_selector, lowest_deal_text'
-            ' FROM deal'
-            ' WHERE id NOT IN ('
-                ' SELECT DISTINCT deal_id FROM deal_log'
-                ' WHERE created > datetime("now", ?)'
-            ' ) LIMIT 10', (os.getenv("REFRESH_INTERVAL", "-1 day"),)
-        ).fetchall()
+        
+        append = (' WHERE d.id NOT IN ('
+        ' SELECT DISTINCT deal_id FROM deal_log'
+        f' WHERE created > datetime("now", "{(os.getenv("REFRESH_INTERVAL", "-1 day"))}")'
+        ' ) LIMIT 10')
+        
+        query = get_select_many_query(append)
+        
+        deals = db.execute(query).fetchall()
         print(f"Found {len(deals)} deals to be refreshed")
         redirect_url = '/'
 
@@ -171,7 +197,7 @@ def refresh_helper(id=None):
         abort(404, "No deals to update")
 
     for deal in deals:
-        price_dirty = find_deal(deal['target_url'], deal['css_selector'])
+        price_dirty = find_deal(deal['product_url'], deal['css_selector'])
 
         if price_dirty:
             update_price_history(deal, price_dirty)
@@ -198,8 +224,13 @@ def delete(id):
 
 def get_record(id, check_author=True):
     deal = get_db().execute(
-        'SELECT d.id, user_id, title, target_url, css_selector, latest_deal_text, lowest_deal_text, d.created, u.username'
-        ' FROM deal d JOIN user u ON d.user_id = u.id'
+        'SELECT d.id, d.user_id, d.title, base_url, target_url,'
+        ' concat(w.title, " - ", d.title) as full_title,'
+        ' concat(w.base_url, "/", d.target_url) as product_url,'
+        ' w.css_selector, latest_deal_text, lowest_deal_text, website_id, d.created, u.username'
+        ' FROM deal d'
+        ' LEFT JOIN user u ON d.user_id = u.id'
+        ' LEFT JOIN website w ON w.id = d.website_id'
         ' WHERE d.id = ?',
         (id,)
     ).fetchone()
@@ -230,7 +261,7 @@ def update_price_history(deal, price_dirty):
     price_clean = get_clean_price(price_dirty)
 
     id = deal['id']
-    title = deal['title']
+    title = deal['full_title']
             
     db.execute(
         'INSERT INTO deal_log (deal_id, deal_text)'
