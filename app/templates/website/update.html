@@ -9,10 +9,11 @@
     <label for="title">Title</label>
     <input name="title" id="title" value="{{ request.form['title'] or record['title'] }}" required>
     <label for="base_url">Base URL</label>
-    <input name="base_url" id="base_url" value="{{ request.form['base_url'] or record['base_url'] }}" type="url" placeholder="https://example.com" required>
+    <input name="base_url" id="base_url" value="{{ request.form['base_url'] or record['base_url'] }}" 
+        type="url" placeholder="https://example.com" required>
     <label for="css_selector">CSS Selector</label>
-    <input name="css_selector" id="css_selector" value="{{ request.form['css_selector'] or record['css_selector']}}"
-        required>
+    <input name="css_selector" id="css_selector" 
+        value="{{ request.form['css_selector'] or record['css_selector']}}" required>
     <input type="submit" value="Save">
 </form>
 <hr>

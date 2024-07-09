@@ -10,10 +10,14 @@ import re
 
 # Check the element and confirm it has valid text for our records
 def get_valid_element_text(element):
+    price = None
+
     try:
-        price = element.text.rstrip()
-    except ValueError:
-        price = None
+        if (element):
+            price = element.text.rstrip()
+    except Exception as error:
+        print("An exception occurred:", type(error).__name__, "–", error)
+        print('Exception throw: Likely not a string or value we can use')
         
     return price
         
@@ -34,7 +38,8 @@ def find_deal(target_url, css_selector):
         if price == None or not price:
             print('Price grab failed. Likely dynamic content. Trying advanced Finder')
             price = find_dynamic_deal(target_url, css_selector)
-    except:
+    except Exception as error:
+        print("An exception occurred:", type(error).__name__, "–", error)
         print('Exception thrown: Issue with find_deal function')
 
     return price
