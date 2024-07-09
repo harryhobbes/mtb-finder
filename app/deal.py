@@ -37,10 +37,10 @@ def get_clean_price(price):
 
 def get_select_many_query(append = ''):
     query = ('SELECT d.id, d.user_id, latest_deal_text, lowest_deal_text,'
-    ' d.title, d.created, u.username,'
+    ' d.title, d.created, u.username, d.website_id,'
     ' w.base_url, d.target_url, w.css_selector,'
-    ' concat(w.base_url, "/", d.target_url) as product_url,'
-    ' concat(w.title, " - ", d.title) as full_title'
+    ' w.base_url || "/" || d.target_url as product_url,'
+    ' w.title || " - " || d.title as full_title'
     ' FROM deal d'
     ' LEFT JOIN user u ON d.user_id = u.id'
     ' LEFT JOIN website w ON w.id = d.website_id'
@@ -223,17 +223,8 @@ def delete(id):
     return redirect(url_for('deal.index'))
 
 def get_record(id, check_author=True):
-    deal = get_db().execute(
-        'SELECT d.id, d.user_id, d.title, base_url, target_url,'
-        ' concat(w.title, " - ", d.title) as full_title,'
-        ' concat(w.base_url, "/", d.target_url) as product_url,'
-        ' w.css_selector, latest_deal_text, lowest_deal_text, website_id, d.created, u.username'
-        ' FROM deal d'
-        ' LEFT JOIN user u ON d.user_id = u.id'
-        ' LEFT JOIN website w ON w.id = d.website_id'
-        ' WHERE d.id = ?',
-        (id,)
-    ).fetchone()
+    query = get_select_many_query(f' WHERE d.id = {id}')
+    deal = get_db().execute(query).fetchone()
 
     if deal is None:
         abort(404, f"Deal id {id} doesn't exist.")
