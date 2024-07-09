@@ -11,3 +11,4 @@ requests
 selenium
 slack_sdk
 useragent
+validators
