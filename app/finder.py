@@ -20,6 +20,19 @@ def get_valid_element_text(element):
         print('Exception throw: Likely not a string or value we can use')
         
     return price
+
+def get_amount(amount):
+    while True:
+        try:
+            val = float(amount)
+            if val >= 0:
+                break
+            else:
+                return False
+        except ValueError:
+            print("Amount must be a number, try again")
+            return False
+    return val
         
 def find_deal(target_url, css_selector):
     price = None
@@ -77,7 +90,7 @@ def find_dynamic_deal(target_url, css_selector):
         html = driver.page_source
         soup = BeautifulSoup(html, 'html.parser')
         
-        price = get_valid_element_text(soup.css.select_one(css_selector))
+        price = get_amount(get_valid_element_text(soup.css.select_one(css_selector)))
     except Exception as error:
         print("An exception occurred:", type(error).__name__, "–", error)
         print('Price grab failed. Likely an issue with the source or CSS selector')
