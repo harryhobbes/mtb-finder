@@ -32,9 +32,6 @@ def format_currency(price):
     
     return price
 
-def get_clean_price(price):
-    return price.replace("$","").replace(",","")
-
 def get_select_many_query(append = ''):
     query = ('SELECT d.id, d.user_id, latest_deal_text, lowest_deal_text,'
     ' d.title, d.created, u.username, d.website_id,'
@@ -197,10 +194,10 @@ def refresh_helper(id=None):
         abort(404, "No deals to update")
 
     for deal in deals:
-        price_dirty = find_deal(deal['product_url'], deal['css_selector'])
+        price = find_deal(deal['product_url'], deal['css_selector'])
 
-        if price_dirty:
-            update_price_history(deal, price_dirty)
+        if price:
+            update_price_history(deal, price)
         else:
             print('No price found')
             flash('No price found')
@@ -246,10 +243,8 @@ def get_deal_history(id, orderby = 'DESC'):
 
     return deal_history
 
-def update_price_history(deal, price_dirty):
+def update_price_history(deal, price):
     db = get_db()
-
-    price_clean = get_clean_price(price_dirty)
 
     id = deal['id']
     title = deal['full_title']
@@ -257,24 +252,26 @@ def update_price_history(deal, price_dirty):
     db.execute(
         'INSERT INTO deal_log (deal_id, deal_text)'
         ' VALUES (?, ?)',
-        (id, price_clean)
+        (id, price)
     )
     db.commit()
 
-    if deal['lowest_deal_text'] is None or price_clean < deal['lowest_deal_text']:
-        message = f'{title} NEW LOWEST PRICE: {format_currency(price_clean)}'
+    current_best_deal = float(deal['lowest_deal_text'])
+
+    if deal['lowest_deal_text'] is None or price < current_best_deal:
+        message = f'{title} NEW LOWEST PRICE: {format_currency(price)}'
         db.execute(
             'UPDATE deal SET latest_deal_text = ?, lowest_deal_text = ?'
             ' WHERE id = ?',
-            (price_clean, price_clean, id)
+            (price, price, id)
         )
         send_slack_message(message)
     else:
-        message = f'{title} current price: {format_currency(price_clean)}'
+        message = f'{title} current price: {format_currency(price)}'
         db.execute(
             'UPDATE deal SET latest_deal_text = ?'
             ' WHERE id = ?',
-            (price_clean, id)
+            (price, id)
         )
 
     db.commit()
